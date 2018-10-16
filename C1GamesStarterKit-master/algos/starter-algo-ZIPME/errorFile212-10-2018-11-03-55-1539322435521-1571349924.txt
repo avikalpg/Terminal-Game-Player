@@ -1,0 +1,2 @@
+---------------- Starting Your Algo --------------------
+Got EOF, parent game process must have died, exiting for cleanup
