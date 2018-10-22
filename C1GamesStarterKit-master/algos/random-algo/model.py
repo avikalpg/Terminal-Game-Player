@@ -98,9 +98,9 @@ class Model():
 
     def decide_firewall(self, friendly_locations):
         firewall_df = pd.DataFrame(0, index=np.arange(len(friendly_locations)), columns=['FF', 'EF', 'DF'])
-        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "FF"] = 1
-        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "EF"] = 1
-        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "DF"] = 1
+        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "FF"] = random.randint(0, 1)
+        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "EF"] = random.randint(0, 1)
+        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "DF"] = random.randint(0, 1)
         return firewall_df
 
     def decide_information(self, friendly_locations):
