@@ -1,7 +1,6 @@
 import sys
 import gamelib
-import numpy as np
-import pandas as pd
+import math
 
 import random
 
@@ -24,23 +23,13 @@ class Model():
         self.game_state = game_state
         
         # arena_size = game_state.game_map.ARENA_SIZE
-        df1 = pd.DataFrame(game_state.game_map.get_edge_locations(game_state.game_map.BOTTOM_LEFT), columns=['l_x', 'y'])
-        df2 = pd.DataFrame(game_state.game_map.get_edge_locations(game_state.game_map.BOTTOM_RIGHT), columns=['r_x', 'y'])
-        friend_df = pd.merge(df1, df2, on='y')
-        df1 = pd.DataFrame(game_state.game_map.get_edge_locations(game_state.game_map.TOP_LEFT), columns=['l_x', 'y'])
-        df2 = pd.DataFrame(game_state.game_map.get_edge_locations(game_state.game_map.TOP_RIGHT), columns=['r_x', 'y'])
-        enemy_df = pd.merge(df1, df2, on='y')
-        arena_bounds_df = pd.concat([friend_df, enemy_df.sort_values('y')], axis=0, ignore_index=True)
+        all_locations = []
+        for i in range(game_state.ARENA_SIZE):
+            for j in range(math.floor(game_state.ARENA_SIZE)):
+                if (game_state.game_map.in_arena_bounds([i, j])):
+                    all_locations.append([i, j])
         
-        arena_array = []
-        for y in np.array(arena_bounds_df):
-            arena_array += [[x, y[1]] for x in range(y[0], 1+y[2])]
-
-        # arena_df = pd.DataFrame(np.array(arena_array), columns=['x', 'y'])
-        # print(arena_df)
-        # arena_df['item'] = arena_df.apply(game_state.game_map.__getitem__)
-
-        for location in arena_array:
+        for location in all_locations:
             item = game_state.game_map.__getitem__(location)
             if len(item) > 0:
                 for i in item:
@@ -53,23 +42,21 @@ class Model():
             else:
                 sys.stderr.write("[model] [game_state_to_vector] Unknown object encountered")
 
-        self.features_df = pd.DataFrame(np.array(self.features), columns=['team', 'max_stability', 'stability', 'range', 'damage', 'heal'])
+        # self.features_df = pd.DataFrame(np.array(self.features), columns=['team', 'max_stability', 'stability', 'range', 'damage', 'heal'])
         # print(self.features_df[features_df.heal != 0])
 
     def get_firewall_strategy(self):
-        df1 = pd.DataFrame(self.game_state.game_map.get_edge_locations(self.game_state.game_map.BOTTOM_LEFT), columns=['l_x', 'y'])
-        df2 = pd.DataFrame(self.game_state.game_map.get_edge_locations(self.game_state.game_map.BOTTOM_RIGHT), columns=['r_x', 'y'])
-        friend_df = pd.merge(df1, df2, on='y')
-
         friendly_locations = []
-        for y in np.array(friend_df):
-            friendly_locations += [[x, y[1]] for x in range(y[0], 1+y[2])]
+        for i in range(self.game_state.ARENA_SIZE):
+            for j in range(math.floor(self.game_state.ARENA_SIZE / 2)):
+                if (self.game_state.game_map.in_arena_bounds([i, j])):
+                    friendly_locations.append([i, j])
 
         firewall_df = self.decide_firewall(friendly_locations)
 
-        self.ff_locations = [friendly_locations[loc] for loc in range(0, len(firewall_df.FF)) if firewall_df.FF[loc]]
-        self.ef_locations = [friendly_locations[loc] for loc in range(0, len(firewall_df.EF)) if firewall_df.EF[loc]]
-        self.df_locations = [friendly_locations[loc] for loc in range(0, len(firewall_df.DF)) if firewall_df.DF[loc]]
+        self.ff_locations = [friendly_locations[loc] for loc in range(0, len(firewall_df['FF'])) if firewall_df['FF'][loc]]
+        self.ef_locations = [friendly_locations[loc] for loc in range(0, len(firewall_df['EF'])) if firewall_df['EF'][loc]]
+        self.df_locations = [friendly_locations[loc] for loc in range(0, len(firewall_df['DF'])) if firewall_df['DF'][loc]]
 
         # print(self.ff_locations, self.ef_locations, self.df_locations)
         return {
@@ -85,9 +72,9 @@ class Model():
         information_df = self.decide_information(friendly_edges)
         # print(information_df)
 
-        self.pi_locations = [[friendly_edges[loc], information_df.PI[loc]] for loc in range(0, len(information_df.PI)) if information_df.PI[loc]]
-        self.ei_locations = [[friendly_edges[loc], information_df.PI[loc]] for loc in range(0, len(information_df.EI)) if information_df.EI[loc]]
-        self.si_locations = [[friendly_edges[loc], information_df.PI[loc]] for loc in range(0, len(information_df.SI)) if information_df.SI[loc]]
+        self.pi_locations = [[friendly_edges[loc], information_df['PI'][loc]] for loc in range(0, len(information_df['PI'])) if information_df['PI'][loc]]
+        self.ei_locations = [[friendly_edges[loc], information_df['EI'][loc]] for loc in range(0, len(information_df['EI'])) if information_df['EI'][loc]]
+        self.si_locations = [[friendly_edges[loc], information_df['SI'][loc]] for loc in range(0, len(information_df['SI'])) if information_df['SI'][loc]]
 
         # print(self.pi_locations, self.ei_locations, self.si_locations)
         return { 
@@ -96,18 +83,34 @@ class Model():
             "SI": self.si_locations 
         }
 
+    '''
+    This is the function that will contain the logic for creating new firewall units
+    Please only change the contents of this function for changing firewall strategy
+    '''
     def decide_firewall(self, friendly_locations):
-        firewall_df = pd.DataFrame(0, index=np.arange(len(friendly_locations)), columns=['FF', 'EF', 'DF'])
-        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "FF"] = 1
-        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "EF"] = 1
-        firewall_df.loc[firewall_df.index == random.randint(0, len(friendly_locations) - 1), "DF"] = 1
+        firewall_df = {
+            'FF': [0] * len(friendly_locations),
+            'EF': [0] * len(friendly_locations),
+            'DF': [0] * len(friendly_locations)
+        }
+        firewall_df['FF'][random.randint(0, len(friendly_locations) - 1)] = random.randint(0, 1)
+        firewall_df['EF'][random.randint(0, len(friendly_locations) - 1)] = random.randint(0, 1)
+        firewall_df['DF'][random.randint(0, len(friendly_locations) - 1)] = random.randint(0, 1)
         return firewall_df
 
+    '''
+    This is the function that will contain the logic for creating new information units
+    Please only change the contents of this function for changing information strategy
+    '''
     def decide_information(self, friendly_locations):
-        information_df = pd.DataFrame(0, index=np.arange(len(friendly_locations)), columns=['PI', 'EI', 'SI'])
-        information_df.loc[information_df.index == random.randint(0, len(friendly_locations) - 1), "PI"] = random.randint(0, 3)
-        information_df.loc[information_df.index == random.randint(0, len(friendly_locations) - 1), "EI"] = random.randint(0, 1)
-        information_df.loc[information_df.index == random.randint(0, len(friendly_locations) - 1), "SI"] = random.randint(0, 3)
+        information_df = {
+            'PI': [0] * len(friendly_locations),
+            'EI': [0] * len(friendly_locations),
+            'SI': [0] * len(friendly_locations)
+        }
+        information_df['PI'][random.randint(0, len(friendly_locations) - 1)] = random.randint(0, 3)
+        information_df['EI'][random.randint(0, len(friendly_locations) - 1)] = random.randint(0, 1)
+        information_df['SI'][random.randint(0, len(friendly_locations) - 1)] = random.randint(0, 3)
         return information_df
 
     def play(self, game_state):
