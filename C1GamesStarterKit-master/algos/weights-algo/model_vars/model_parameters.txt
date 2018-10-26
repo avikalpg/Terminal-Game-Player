@@ -1,0 +1,1 @@
+{"gamma": 0.7, "ff_threshold": 0.5, "ef_threshold": 0.5, "df_threshold": 0.5, "pi_log_base": 2.0, "ei_log_base": 2.0, "si_log_base": 2.0}
