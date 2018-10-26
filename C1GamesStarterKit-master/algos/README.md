@@ -3,16 +3,17 @@ Idea
 
 ## Reward calculation
 
-    utility = current_reward + gamma * winning_chances
+> utility = current_reward + \gamma * winning_chances
 
-    current_reward = d(my_health) - d(enemy_health)
+>> current_reward = \Delta(my_health) - \Delta(enemy_health)
+
 or
 
-    current_reward = (d(my_health) + d(my_stationary_units_stability)) - (d(enemy_health) + d(enemy_stationary_units_stability))
+>> current_reward = (d(my_health) + d(my_stationary_units_stability)) - (d(enemy_health) + d(enemy_stationary_units_stability))
 
 `winning_chances` can be calculated either in a simple but inaccurate way, or in the traditional DQL method:
 1. **Simple method**: 
-> winning_chances = my_health - enemy_health
+>> winning_chances = $my\_health_{t}$ - $enemy_health_t$
 
 or 
 >> winning_chances = (my_health + my_cores_on_board) - (enemy_health - enemy_cores_on_board)
