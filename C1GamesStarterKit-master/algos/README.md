@@ -1,7 +1,7 @@
 Idea
 ==
 
-#### Reward calculation
+## Reward calculation
 
     utility = current_reward + gamma * winning_chances
 
@@ -19,7 +19,7 @@ or
 2. **DQL method**: 
 Based on a lot of matches, learn what states lead to a win and what states lead to a loss.
 
-#### Memory
+## Memory
 
 The idea is to be able to store all the experiences in one place not having to play the whole games again and again for retraining
 
@@ -28,7 +28,7 @@ According to [this link](https://keon.io/deep-q-learning/), I should be storing 
 
 Using a `remember` function to save this set after playing it each time, and using a `replay` method to retrain on the remember function
 
-#### Model weights
+## Model weights
 
 Inside the folder for each algorithm, there is a folder called `model_vars` which contains three files:
 1. model_parameters: For just storing or altering hyperparameters of the model
@@ -43,7 +43,7 @@ Hence the learning (i.e. updating of the model weights) will occur for the previ
 The following order is following in the lifecycle of the player's turn:
 1. Load saved weights and parameters
 2. Load previous state
-3. Calculate `utility` (after calculating `reward`) for (s<sub>t-1</sub>, a, s<sub>t</sub>), where s<sub>t-1</sub> is the previous game state, based on which the action was taken
+3. Calculate `utility` (after calculating `reward`) for *(s<sub>t-1</sub>, a, s<sub>t</sub>)*, where *s<sub>t-1</sub>* is the previous game state, based on which the action *a* was taken
 4. Update the weights 
 5. Calculate the next action (part of the `play` function in the `framework.py` files)
 6. Save the current game state and updated weights
